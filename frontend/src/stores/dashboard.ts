@@ -165,6 +165,19 @@ export const useDashboardStore = defineStore('dashboard', () => {
     return data !== null
   }
 
+  async function executeServerControl(action: string) {
+    switch (action) {
+      case 'start':
+        return await startServer()
+      case 'stop':
+        return await stopServer()
+      case 'restart':
+        return await restartServer()
+      default:
+        throw new Error(`Unknown action: ${action}`)
+    }
+  }
+
   function startAutoRefresh() {
     if (refreshTimer) {
       clearInterval(refreshTimer)
@@ -246,6 +259,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     startServer,
     stopServer,
     restartServer,
+    executeServerControl,
     startAutoRefresh,
     stopAutoRefresh,
     setAutoRefresh,

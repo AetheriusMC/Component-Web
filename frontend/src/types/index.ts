@@ -28,6 +28,33 @@ export interface Player {
   experience: number
 }
 
+// Extended player response from API
+export interface PlayerResponse {
+  uuid: string
+  name: string
+  online: boolean
+  last_login?: string
+  last_logout?: string
+  ip_address?: string
+  game_mode: string
+  level: number
+  experience: number
+  health?: number
+  food_level?: number
+  location?: {
+    world: string
+    x: number
+    y: number
+    z: number
+  }
+  inventory_size?: number
+  playtime_hours?: number
+  is_op: boolean
+  is_banned: boolean
+  ban_reason?: string
+  ban_expires?: string
+}
+
 export interface ConsoleMessage {
   type: string
   timestamp: string
@@ -98,6 +125,21 @@ export interface ChartData {
     backgroundColor: string
     fill: boolean
   }[]
+}
+
+// Performance Data Types
+export interface PerformanceData {
+  tps: number
+  cpu_usage: number
+  memory_usage: number
+  memory_total: number
+  memory_used: number
+  disk_usage?: number
+  network_in?: number
+  network_out?: number
+  thread_count?: number
+  gc_collections?: number
+  timestamp?: string
 }
 
 // File Manager Types

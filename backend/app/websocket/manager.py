@@ -24,6 +24,7 @@ class ConnectionType(Enum):
     CONSOLE = "console"
     STATUS = "status"
     EVENTS = "events"
+    DASHBOARD = "dashboard"
 
 
 @dataclass
@@ -61,6 +62,7 @@ class WebSocketManager:
             ConnectionType.CONSOLE: set(),
             ConnectionType.STATUS: set(),
             ConnectionType.EVENTS: set(),
+            ConnectionType.DASHBOARD: set(),
         }
         self._lock = None  # Will be initialized when first used
         self._message_queue = None  # Will be initialized when first used
@@ -339,5 +341,35 @@ def create_player_event_message(event_type: str, player_data: Dict[str, Any]) ->
         data={
             "event_type": event_type,
             "player": player_data
+        }
+    )
+
+
+def create_performance_message(performance_data: Dict[str, Any]) -> WSMessage:
+    """Create a performance update message"""
+    return WSMessage(
+        type="performance_update",
+        timestamp=datetime.now(),
+        data=performance_data
+    )
+
+
+def create_dashboard_summary_message(summary_data: Dict[str, Any]) -> WSMessage:
+    """Create a dashboard summary message"""
+    return WSMessage(
+        type="dashboard_summary",
+        timestamp=datetime.now(),
+        data=summary_data
+    )
+
+
+def create_server_control_message(action: str, result: Dict[str, Any]) -> WSMessage:
+    """Create a server control result message"""
+    return WSMessage(
+        type="server_control_result",
+        timestamp=datetime.now(),
+        data={
+            "action": action,
+            "result": result
         }
     )

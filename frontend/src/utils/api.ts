@@ -77,6 +77,16 @@ export class ApiClient {
     return response.data
   }
 
+  static async getCurrentPerformance(): Promise<any> {
+    const response = await apiClient.get('/server/performance')
+    return response.data
+  }
+
+  static async getServerSummary(): Promise<any> {
+    const response = await apiClient.get('/server/summary')
+    return response.data
+  }
+
   // Server control APIs
   static async startServer(): Promise<any> {
     const response = await apiClient.post('/server/start')
@@ -132,6 +142,73 @@ export class ApiClient {
     const response = await apiClient.post(`/players/${uuid}/action`, {
       action: 'deop'
     })
+    return response.data
+  }
+
+  // Enhanced Player Management APIs
+  static async searchPlayers(params: {
+    page?: number
+    per_page?: number
+    query?: string
+    online_only?: boolean
+    game_mode?: string
+    min_level?: number | null
+    max_level?: number | null
+    sort_by?: string
+    sort_order?: string
+  }): Promise<any> {
+    const searchParams = new URLSearchParams()
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        searchParams.append(key, String(value))
+      }
+    })
+    
+    const response = await apiClient.get(`/players?${searchParams.toString()}`)
+    return response.data
+  }
+
+  static async getPlayerDetails(playerIdentifier: string): Promise<any> {
+    const response = await apiClient.get(`/players/${playerIdentifier}`)
+    return response.data
+  }
+
+  static async executePlayerAction(playerIdentifier: string, actionData: {
+    action: string
+    reason?: string
+    duration?: number
+  }): Promise<any> {
+    const response = await apiClient.post(`/players/${playerIdentifier}/action`, actionData)
+    return response.data
+  }
+
+  static async executeBatchPlayerAction(actionData: {
+    player_uuids: string[]
+    action: string
+    reason?: string
+    duration?: number
+  }): Promise<any> {
+    const response = await apiClient.post('/players/batch-action', actionData)
+    return response.data
+  }
+
+  static async getPlayerOperationsHistory(params: {
+    page?: number
+    per_page?: number
+    player_identifier?: string
+    action?: string
+    operator?: string
+  } = {}): Promise<any> {
+    const searchParams = new URLSearchParams()
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        searchParams.append(key, String(value))
+      }
+    })
+    
+    const response = await apiClient.get(`/players/operations/history?${searchParams.toString()}`)
     return response.data
   }
 }

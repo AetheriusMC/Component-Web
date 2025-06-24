@@ -7,6 +7,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
   // State
   const consoleWs = ref<AutoReconnectWebSocket | null>(null)
   const statusWs = ref<AutoReconnectWebSocket | null>(null)
+  const dashboardWs = ref<AutoReconnectWebSocket | null>(null)
   
   const consoleStatus = ref<WSConnectionStatus>({
     connected: false,
@@ -18,13 +19,25 @@ export const useWebSocketStore = defineStore('websocket', () => {
     reconnecting: false
   })
   
+  const dashboardStatus = ref<WSConnectionStatus>({
+    connected: false,
+    reconnecting: false
+  })
+  
   const consoleMessages = ref<ConsoleMessage[]>([])
   const maxConsoleMessages = 1000
+  
+  // Message handlers
+  const messageHandlers = ref<Array<(message: WSMessage) => void>>([])
+  
+  // Dashboard connection flag
+  const isDashboardMode = ref(false)
 
   // Computed
   const isConsoleConnected = computed(() => consoleStatus.value.connected)
   const isStatusConnected = computed(() => statusConnectionStatus.value.connected)
-  const isAnyConnected = computed(() => isConsoleConnected.value || isStatusConnected.value)
+  const isDashboardConnected = computed(() => dashboardStatus.value.connected)
+  const isAnyConnected = computed(() => isConsoleConnected.value || isStatusConnected.value || isDashboardConnected.value)
 
   // Actions
   function initConsoleWebSocket() {
@@ -184,29 +197,123 @@ export const useWebSocketStore = defineStore('websocket', () => {
     initStatusWebSocket()
   }
 
-  // Auto-connect on store creation
-  connectAll()
+  function initDashboardWebSocket() {
+    if (dashboardWs.value) {
+      return
+    }
+
+    const wsUrl = createWebSocketUrl('/dashboard/ws')
+    dashboardWs.value = new AutoReconnectWebSocket(wsUrl)
+
+    // Handle connection status changes
+    dashboardWs.value.onConnectionChange((status) => {
+      dashboardStatus.value = status
+      console.log('Dashboard WebSocket status:', status)
+    })
+
+    // Handle incoming messages
+    dashboardWs.value.onMessage((message: WSMessage) => {
+      handleDashboardMessage(message)
+    })
+
+    // Connect
+    dashboardWs.value.connect().catch((error) => {
+      console.error('Failed to connect dashboard WebSocket:', error)
+    })
+  }
+
+  function handleDashboardMessage(message: WSMessage) {
+    console.log('Dashboard message received:', message)
+
+    // Call all registered message handlers
+    messageHandlers.value.forEach(handler => {
+      try {
+        handler(message)
+      } catch (error) {
+        console.error('Error in message handler:', error)
+      }
+    })
+
+    switch (message.type) {
+      case 'dashboard_summary':
+      case 'performance_update':
+      case 'server_control_result':
+        // These are handled by components via message handlers
+        break
+
+      case 'connection_established':
+        console.log('Dashboard connection established:', message.data)
+        break
+
+      default:
+        console.warn('Unknown dashboard message type:', message.type)
+    }
+  }
+
+  function connectDashboard() {
+    isDashboardMode.value = true
+    initDashboardWebSocket()
+  }
+
+  function disconnectDashboard() {
+    if (dashboardWs.value) {
+      dashboardWs.value.disconnect()
+      dashboardWs.value = null
+    }
+    dashboardStatus.value = { connected: false, reconnecting: false }
+    isDashboardMode.value = false
+  }
+
+  function onMessage(handler: (message: WSMessage) => void) {
+    messageHandlers.value.push(handler)
+  }
+
+  function offMessage(handler: (message: WSMessage) => void) {
+    const index = messageHandlers.value.indexOf(handler)
+    if (index > -1) {
+      messageHandlers.value.splice(index, 1)
+    }
+  }
+
+  function disconnect() {
+    disconnectAll()
+    disconnectDashboard()
+  }
+
+  // Auto-connect on store creation (console only by default)
+  if (!isDashboardMode.value) {
+    connectAll()
+  }
 
   return {
     // State
     consoleStatus,
     statusConnectionStatus,
+    dashboardStatus,
     consoleMessages,
+    isDashboardMode,
 
     // Computed
     isConsoleConnected,
     isStatusConnected,
+    isDashboardConnected,
     isAnyConnected,
 
     // Actions
     initConsoleWebSocket,
     initStatusWebSocket,
+    initDashboardWebSocket,
     sendConsoleCommand,
     clearConsoleMessages,
     connectAll,
     disconnectAll,
+    connectDashboard,
+    disconnectDashboard,
     reconnectConsole,
     reconnectStatus,
-    addConsoleMessage
+    addConsoleMessage,
+    onMessage,
+    offMessage,
+    disconnect
   }
 })
